@@ -1,0 +1,4 @@
+# Keep implementation and admin setup artifacts out of the public deployment.
+docs/
+supabase/
+README.md

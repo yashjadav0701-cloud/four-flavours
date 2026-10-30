@@ -479,6 +479,12 @@
       const field = form.elements.namedItem(`social_${key}`); if (field) field.value = social[key] || "";
     });
     const theme = siteSettings.theme || {};
+    const shapeDefaults = { hero: "arch", story: "classic", cuisine: "arch", gallery: "rounded" };
+    Object.entries(shapeDefaults).forEach(([area, fallback]) => {
+      const field = form.elements.namedItem(`theme_${area}_shape`);
+      if (field) field.value = ["classic", "soft", "rounded", "pill", "circle", "arch", "oval", "organic", "diamond", "hexagon", "cut-corners", "slant", "leaf", "ticket"].includes(theme[`${area}_shape`]) ? theme[`${area}_shape`] : fallback;
+    });
+    updateShapePreviews();
     const colourDefaults = {
       accent: "#B64F38", accent_dark: "#8E3828", paper: "#F6F0E6", paper_deep: "#EEE5D8",
       ink: "#20211D", ink_soft: "#52534B", olive: "#53664E", gold: "#D4A74F", surface: "#FFFDF8", line: "#D6CFC1"
@@ -491,7 +497,34 @@
     const logoWidth = Number(theme.logo_width);
     const widthField = form.elements.namedItem("theme_logo_width");
     if (widthField) widthField.value = String(Number.isFinite(logoWidth) && logoWidth >= 200 && logoWidth <= 360 ? logoWidth : 280);
+
+    const marqueeEnabledField = form.elements.namedItem("theme_marquee_enabled");
+    if (marqueeEnabledField) marqueeEnabledField.checked = theme.marquee_enabled !== false;
+
+    const savedMarqueeSpeed = Number(theme.marquee_speed ?? 34);
+    const marqueeSpeed = Number.isFinite(savedMarqueeSpeed)
+      ? Math.min(60, Math.max(10, savedMarqueeSpeed))
+      : 34;
+
+    const marqueeSpeedField = form.elements.namedItem("theme_marquee_speed");
+    if (marqueeSpeedField) marqueeSpeedField.value = String(marqueeSpeed);
+
+    const marqueeSpeedOutput = $("#marqueeSpeedValue");
+    if (marqueeSpeedOutput) {
+      marqueeSpeedOutput.textContent = `${marqueeSpeed} seconds per loop · ${marqueeSpeed <= 20 ? "Fast" : marqueeSpeed <= 40 ? "Normal" : "Slow"}`;
+    }
+
     updateThemePreview();
+  }
+
+  function updateShapePreviews() {
+    const form = $("#settingsForm");
+    if (!form) return;
+    ["hero", "story", "cuisine", "gallery"].forEach(area => {
+      const selected = form.elements.namedItem(`theme_${area}_shape`)?.value || ({ hero: "arch", story: "classic", cuisine: "arch", gallery: "rounded" })[area];
+      const preview = $(`[data-shape-preview="${area}"]`);
+      if (preview) preview.dataset.shape = selected;
+    });
   }
 
   const DEFAULT_THEME_COLORS = {
@@ -546,6 +579,16 @@
       hex.addEventListener("blur", () => sync(true));
     });
     $("#theme_logo_width")?.addEventListener("input", updateThemePreview);
+
+    $("#theme_marquee_speed")?.addEventListener("input", event => {
+      const value = Number(event.currentTarget.value);
+      const output = $("#marqueeSpeedValue");
+
+      if (output) {
+        output.textContent = `${value} seconds per loop · ${value <= 20 ? "Fast" : value <= 40 ? "Normal" : "Slow"}`;
+      }
+    });
+
     $("#resetThemeColors")?.addEventListener("click", () => {
       Object.entries(DEFAULT_THEME_COLORS).forEach(([name, value]) => {
         const picker = form.elements.namedItem(name); const hex = form.elements.namedItem(`${name}_hex`);
@@ -572,11 +615,18 @@
       googleBusiness: String(data.social_googleBusiness || "").trim()
     };
     payload.theme = {
+      ...(siteSettings?.theme && typeof siteSettings.theme === "object" ? siteSettings.theme : {}),
       accent: data.theme_accent || "#B64F38", accent_dark: data.theme_accent_dark || "#8E3828",
       paper: data.theme_paper || "#F6F0E6", paper_deep: data.theme_paper_deep || "#EEE5D8",
       ink: data.theme_ink || "#20211D", ink_soft: data.theme_ink_soft || "#52534B", olive: data.theme_olive || "#53664E",
-      gold: data.theme_gold || "#D4A74F", surface: data.theme_surface || "#FFFDF8", line: data.theme_line || "#D6CFC1",
-      logo_width: Math.min(360, Math.max(200, Number(data.theme_logo_width) || 280))
+      gold: data.theme_gold || "#D4A74F",
+      surface: data.theme_surface || "#FFFDF8",
+      line: data.theme_line || "#D6CFC1",
+      logo_width: Math.min(360, Math.max(200, Number(data.theme_logo_width) || 280)),
+      marquee_enabled: data.theme_marquee_enabled === "on",
+      marquee_speed: Math.min(60,Math.max(10, Number(data.theme_marquee_speed) || 34)),
+      hero_shape: data.theme_hero_shape || "arch", story_shape: data.theme_story_shape || "classic",
+      cuisine_shape: data.theme_cuisine_shape || "arch", gallery_shape: data.theme_gallery_shape || "rounded"
     };
     const status = $("#settingsStatus"); if (status) status.textContent = "Saving…";
     const button = form.querySelector("button[type='submit']"); if (button) button.disabled = true;
@@ -991,6 +1041,9 @@
     }));
     $("#cuisineImageFile")?.addEventListener("change", uploadCuisineImage);
     $("#cuisineImageUrl")?.addEventListener("input", event => updateCuisineImagePreview(event.currentTarget.value));
+    ["theme_hero_shape", "theme_story_shape", "theme_cuisine_shape", "theme_gallery_shape"].forEach(name => {
+      $(`#settingsForm [name="${name}"]`)?.addEventListener("change", updateShapePreviews);
+    });
     $("#addCuisineButton")?.addEventListener("click", () => openCuisineEditor(null));
     $("#cancelCuisineEdit")?.addEventListener("click", () => { $("#cuisineEditorWrap").hidden = true; });
     $("#cuisineForm")?.addEventListener("submit", saveCuisine);

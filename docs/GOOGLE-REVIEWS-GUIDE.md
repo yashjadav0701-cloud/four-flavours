@@ -1,6 +1,6 @@
 # Google Reviews — setup guide
 
-There are two different jobs: (1) send visitors to the official Google reviews page, or (2) retrieve Google review data and render selected reviews on the Four Flavours website. Do not scrape the Google Maps page HTML or copy reviews automatically from search-result snippets.
+For the conservative free-usage setup, follow `docs/GOOGLE-REVIEWS-FREE-TIER-SETUP.md` first. Apply the daily-budget migration before deploying this function. The function has a hard limit of 25 Google Places calls per UTC day, lazy-loads reviews only when the visitor approaches the reviews section, and fails closed if its usage guard is unavailable. Review content is deliberately not cached or persisted.
 
 ## Option A — quickest and recommended: link to the official Google review page
 
@@ -8,7 +8,7 @@ There are two different jobs: (1) send visitors to the official Google reviews p
 2. Open the profile and choose **Ask for reviews** (wording may vary slightly), then copy the official review link.
 3. Open `admin.html` → **Website & branding** → **Google review profile URL** and paste the link. Save settings.
 4. Also fill **Google Business profile URL** under Social media links if you want the Google icon to appear in the social links.
-5. On the public site, the “Also review us on Google” link opens Google, where customers can read current reviews and post a new one.
+5. On the public site, all prominent review-writing calls to action open this official Google review link in a new tab, where customers can post a review. “Read Google reviews” opens the business listing.
 
 This does not import reviews into the website. It is the simplest way to keep customers on Google's official, up-to-date review page without needing an API key.
 
@@ -26,14 +26,14 @@ Places API (New) Place Details can return review data for a place, but the Place
    supabase functions deploy google-reviews --no-verify-jwt
    ```
 
-   It is a public, read-only endpoint so website visitors can request the current place reviews. CORS origin checks are included, but CORS is not authentication; apply Google API quotas and monitor usage. Do not expose the Google API key in browser code.
-6. Configure the Function secrets in the linked project (replace the values with your real ones; do not share them in chat):
+   It is a public, read-only endpoint so website visitors can request the current place reviews. The updated function also enforces a database-backed maximum of 25 Google requests per UTC day; CORS is not authentication. Do not expose the Google API key in browser code.
+6. The supplied review link resolves to Place ID `ChIJfbf-_13HXzkRG0PwRzehbcE`. The included Edge Function uses this Place ID by default; set `GOOGLE_PLACES_PLACE_ID` only if the official review link points to a different verified listing. Configure the Function secrets in the linked project (replace the API key and website origin with your real values; never share the key in chat):
 
    ```bash
-   supabase secrets set GOOGLE_PLACES_API_KEY="YOUR_RESTRICTED_GOOGLE_API_KEY" GOOGLE_PLACES_PLACE_ID="YOUR_VERIFIED_PLACE_ID" ALLOWED_ORIGINS="https://four-flavours.vercel.app,http://127.0.0.1:5500,http://localhost:5500"
+   supabase secrets set GOOGLE_PLACES_API_KEY="YOUR_RESTRICTED_GOOGLE_API_KEY" ALLOWED_ORIGINS="https://four-flavours.vercel.app,http://127.0.0.1:5500,http://localhost:5500"
    ```
 
-   If Live Server uses another port, add that exact origin. Restrict the Google key to Places API (New), set billing alerts and quotas, and verify that the Place ID belongs to the restaurant. Then in `js/config.js`, change only `googleReviewsEnabled: false` to `googleReviewsEnabled: true`. Preserve your existing Supabase URL and publishable key. The site will request the function and show a separate Google Maps review panel, with reviewer attribution and a link to Google Maps. If the function is not enabled, the site does not call it and the existing first-party reviews continue to work.
+   The example includes the known `https://four-flavours.vercel.app` origin. Replace/add the exact production origin(s) (including `https://` and hostname) if your Vercel deployment or custom domain differs, plus any local Live Server origin you use. Restrict the Google key to Places API (New), set billing alerts and quotas, and verify the listing. `js/config.js` already has Google reviews enabled; once the function is deployed and the secret is set, the site requests it and shows the Google rating/review panel with source links and attribution. Without the secret/function configuration, the public page will continue to show direct links to Google but cannot fetch live snippets.
 7. Test billing, quota, CORS, error handling and attribution before publishing. The function sends `Cache-Control: no-store` and does not write Google's review content to your database. Follow Google's current caching/storage and content-display rules; do not assume every returned review can be permanently copied into your own tables.
 
 The included Google review cards link to each returned review's own Google Maps source and show author attribution. The panel says that results are ordered by relevance and explains that Google does not verify reviews; it also provides Google’s review-policy link. Before enabling Places API in a public launch, publish accessible Terms of Use and Privacy Policy pages that incorporate Google’s Terms of Service and Privacy Policy, and complete all attribution checks required by Google. See the official [Places API policies and attribution rules](https://developers.google.com/maps/documentation/places/web-service/policies).
@@ -54,7 +54,6 @@ Google's review-list method states that the location must be verified and requir
 
 ## What to use on the Four Flavours site
 
-- Use **Option A now**: paste the official Google review link into Website & branding.
-- Use the existing in-site review form for direct customer feedback; new reviews remain pending until the admin approves them.
-- Use Option B only if displaying a small Google-selected review set is sufficient and you can deploy a secure endpoint.
-- Use Option C if you manage a verified profile and need the business's review listing.
+- Keep **Option A** enabled for the customer-facing “Write a review” actions; they open the official Google review page.
+- Use **Option B** for live Google review cards on the page. Follow `docs/GOOGLE-REVIEWS-FREE-TIER-SETUP.md`, apply the daily-budget migration, set the two Function secrets, and deploy the function.
+- Use Option C only if you manage a verified profile and need the broader paginated review list; it requires separate Business Profile API access and OAuth authorization.

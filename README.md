@@ -45,7 +45,7 @@ Follow `docs/SUPABASE-SETUP-GUIDE.md`. In summary, create a Supabase project, ru
 
 ## What the studio can change
 
-Restaurant name/tagline, announcement strip, logo, browser icon/favicon, hero/story content and images, contact information, hours, map URL, Google review URL, social links, theme colours, SEO metadata, cuisine cards and photos, media library, guest review moderation/highlights, and contact-message statuses/private notes.
+Restaurant name/tagline, announcement strip, logo, browser icon/favicon, hero/story content and images, contact information, hours, map URL, Google review URL, social links, theme colours, four image-container shape controls (hero, story, cuisine cards and gallery), SEO metadata, cuisine cards and photos, media library, guest review moderation/highlights, and contact-message statuses/private notes.
 
 ## A few important boundaries
 
@@ -67,3 +67,13 @@ See `docs/GOOGLE-REVIEWS-GUIDE.md` for the official Google review-link workflow,
 ### Admin branding controls
 
 The Website & branding panel includes a live palette preview, exact HEX fields paired with the colour picker, and a desktop header-logo width slider. It controls accent/accent-dark, background/contrast, primary/secondary text, olive, gold, surface, and border colours; the values are stored in the existing `site_settings.theme` JSON field, so the updated palette does not require a database migration. The public header uses the bundled full Four Flavours logo on its own when no custom logo has been uploaded.
+
+## Google review + image-frame data migration
+
+Optional, data-only SQL: `supabase/migrations/20261030010000_google_reviews_image_shapes.sql`.
+It fills the Google review destination only if the current value is blank and fills default image-frame keys in the existing `site_settings.theme` JSON without replacing non-empty saved selections. It makes no schema, permission, or function changes. Review the SQL and run it in Supabase SQL Editor only after confirming `public.site_settings` exists. Google Places API fetching separately requires the Edge Function deployment and server-side secrets described in `docs/GOOGLE-REVIEWS-GUIDE.md`.
+
+
+## Google reviews free-usage protection
+
+Follow `docs/GOOGLE-REVIEWS-FREE-TIER-SETUP.md`. Apply `supabase/migrations/20261030020000_google_reviews_daily_budget.sql` before deploying the Google reviews function. The function reserves at most 25 Google Places API calls per UTC day, makes no calls if the counter RPC is unavailable, and does not cache or persist Google review content. You must still create/restrict the Google Cloud API key and set the `GOOGLE_PLACES_API_KEY` and `ALLOWED_ORIGINS` Supabase secrets yourself.

@@ -7,5 +7,5 @@ window.FF_CONFIG = Object.freeze({
   supabaseUrl: "https://hcvdmqxvgnandynshmgz.supabase.co",
   supabasePublishableKey: "sb_publishable_zK3QC1YGl6xC2Swho5cdpA_BUuvGvWV", // Supabase Dashboard -> Project Settings -> API Keys -> Publishable key
   storageBucket: "website-media",
-  googleReviewsEnabled: false // Set true only after deploying the optional google-reviews Edge Function.
+  googleReviewsEnabled: true // Live Google reviews load after the google-reviews Edge Function and its server secrets are configured.
 });

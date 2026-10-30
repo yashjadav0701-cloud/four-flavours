@@ -1,0 +1,4 @@
+project_id = "four-flavours-live-server"
+
+[functions.google-reviews]
+verify_jwt = false

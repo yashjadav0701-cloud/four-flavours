@@ -34,10 +34,24 @@
     phone: "",
     email: "",
     opening_hours: "Please contact the restaurant to confirm today’s hours.",
-    map_url: "https://www.google.com/maps/search/?api=1&query=Four+Flavours+restaurant+Vadodara+Gujarat",
-    google_review_url: "",
+    map_url: "https://www.google.com/maps/place/?q=place_id:ChIJfbf-_13HXzkRG0PwRzehbcE",
+    google_review_url: "https://g.page/r/CRtD8Ec3oW3BEAE/review",
     social_links: { instagram: "", facebook: "", whatsapp: "", youtube: "", googleBusiness: "" },
-    theme: { accent: "#B64F38", accent_dark: "#8E3828", paper: "#F6F0E6", paper_deep: "#EEE5D8", ink: "#20211D", ink_soft: "#52534B", olive: "#53664E", gold: "#D4A74F", surface: "#FFFDF8", line: "#D6CFC1", logo_width: 280 },
+    theme: {
+      accent: "#B64F38",
+      accent_dark: "#8E3828",
+      paper: "#F6F0E6",
+      paper_deep: "#EEE5D8",
+      ink: "#20211D",
+      ink_soft: "#52534B",
+      olive: "#53664E",
+      gold: "#D4A74F",
+      surface: "#FFFDF8",
+      line: "#D6CFC1",
+      logo_width: 280,
+      marquee_enabled: true,
+      marquee_speed: 34
+    },
     meta_title: "Four Flavours | A world of flavours in every plate",
     meta_description: "Discover Four Flavours: four cuisine traditions, warm hospitality, honest guest reviews and a table waiting for you in Vadodara."
   };
@@ -53,6 +67,7 @@
   let cuisines = FALLBACK_CUISINES.slice();
   let reviews = [];
   let googleReviewsLoaded = false;
+  let googleReviewPayload = null;
   let galleryItems = [];
   let toastTimer = null;
 
@@ -75,6 +90,20 @@
   function setText(selector, value) {
     const node = $(selector);
     if (node) node.textContent = value == null ? "" : String(value);
+  }
+
+  function setRatingStars(rawRating, sourceLabel) {
+    const node = $(".reviews__rating .rating-stars");
+    if (!node) return;
+    const rating = Number(rawRating);
+    if (Number.isFinite(rating) && rating > 0) {
+      const filled = Math.max(0, Math.min(5, Math.round(rating)));
+      node.textContent = `${"★".repeat(filled)}${"☆".repeat(5 - filled)}`;
+      node.setAttribute("aria-label", `Average rating ${rating.toFixed(1)} out of 5 from ${sourceLabel}`);
+    } else {
+      node.textContent = "☆☆☆☆☆";
+      node.setAttribute("aria-label", "No average rating available yet");
+    }
   }
 
   function setLinesHeading(selector, value, lastLineItalic = true) {
@@ -119,6 +148,21 @@
       node.setAttribute("data-image-error", "true");
     };
     if (url) node.src = url;
+  }
+
+  const DEFAULT_GOOGLE_REVIEW_URL = "https://g.page/r/CRtD8Ec3oW3BEAE/review";
+  const DEFAULT_GOOGLE_LISTING_URL = "https://www.google.com/maps/place/?q=place_id:ChIJfbf-_13HXzkRG0PwRzehbcE";
+
+  function googleReviewUrl() {
+    return safeUrl(settings.google_review_url) || DEFAULT_GOOGLE_REVIEW_URL;
+  }
+
+  function googleListingUrl() {
+    const profileUrl = safeUrl(settings.social_links?.googleBusiness);
+    if (profileUrl) return profileUrl;
+    const mapUrl = safeUrl(settings.map_url);
+    if (mapUrl && (/place_id:/i.test(mapUrl) || !/maps\/search\//i.test(mapUrl))) return mapUrl;
+    return DEFAULT_GOOGLE_LISTING_URL;
   }
 
   function setExternalLink(selector, rawUrl, fallback = "#visit") {
@@ -213,9 +257,35 @@
       if (/^#[\da-f]{6}$/i.test(t[key] || "")) root.style.setProperty(token, t[key]);
     });
     const logoWidth = Number(t.logo_width);
-    if (Number.isFinite(logoWidth) && logoWidth >= 200 && logoWidth <= 360) root.style.setProperty("--brand-logo-width", `${logoWidth}px`);
+
+    if (Number.isFinite(logoWidth) && logoWidth >= 200 && logoWidth <= 360) {
+      root.style.setProperty("--brand-logo-width", `${logoWidth}px`);
+    }
+
+    const marqueeSpeed = Number(t.marquee_speed);
+
+    if (Number.isFinite(marqueeSpeed)) {
+      root.style.setProperty(
+        "--marquee-duration",
+        `${Math.min(60, Math.max(10, marqueeSpeed))}s`
+      );
+    }
+
+    const marquee = $(".marquee");
+
+    if (marquee) {
+      marquee.hidden = t.marquee_enabled === false;
+    }
+
     const meta = $("#themeColorMeta");
     if (meta && /^#[\da-f]{6}$/i.test(t.paper || "")) meta.content = t.paper;
+
+    const allowedShapes = new Set(["classic", "soft", "rounded", "pill", "circle", "arch", "oval", "organic", "diamond", "hexagon", "cut-corners", "slant", "leaf", "ticket"]);
+    const shapeDefaults = { hero: "arch", story: "classic", cuisine: "arch", gallery: "rounded" };
+    Object.entries(shapeDefaults).forEach(([area, fallback]) => {
+      const configured = String(t[`${area}_shape`] || fallback);
+      document.documentElement.dataset[`${area}Shape`] = allowedShapes.has(configured) ? configured : fallback;
+    });
   }
 
   function renderSocialLinks() {
@@ -274,8 +344,8 @@
     setText("#addressText", settings.address || DEFAULT_SETTINGS.address);
     setText("#hoursText", settings.opening_hours || DEFAULT_SETTINGS.opening_hours);
     setExternalLink("#directionsLink", settings.map_url, "#visit");
-    setExternalLink("#allReviewsLink", settings.google_review_url, "#reviews");
-    setExternalLink("#writeReviewLink", settings.google_review_url, "#reviews");
+    setExternalLink("#allReviewsLink", googleListingUrl(), googleReviewUrl());
+    setExternalLink("#writeReviewLink", googleReviewUrl(), googleReviewUrl());
     setExternalLink("#instagramLink", settings.social_links?.instagram, "#visit");
     setEmailAndPhone();
     renderSocialLinks();
@@ -324,13 +394,14 @@
     if (!grid) return;
     const approved = reviews.filter(review => review.status === "approved").sort((a, b) => Number(Boolean(b.highlight)) - Number(Boolean(a.highlight)) || new Date(b.created_at) - new Date(a.created_at));
     grid.replaceChildren();
-    if (!approved.length) {
+
+    if (!approved.length && !googleReviewPayload) {
       const empty = document.createElement("article");
       empty.className = "review-card review-card--empty reveal is-visible";
       const kicker = document.createElement("span"); kicker.className = "review-source"; kicker.textContent = "GUEST VOICES";
       const title = document.createElement("h3"); title.textContent = "Your experience belongs here.";
-      const copy = document.createElement("p"); copy.textContent = "Be one of the first guests to share an honest note. Every review is checked before it appears here.";
-      const button = document.createElement("button"); button.type = "button"; button.className = "button button--dark"; button.dataset.openReview = "true"; button.textContent = "Write the first review ↗";
+      const copy = document.createElement("p"); copy.textContent = "Read what guests share on Google, or leave an honest review about your own visit.";
+      const button = document.createElement("a"); button.className = "button button--dark"; button.href = googleReviewUrl(); button.target = "_blank"; button.rel = "noopener noreferrer"; button.textContent = "Write the first Google review ↗";
       empty.append(kicker, title, copy, button); grid.append(empty);
     } else {
       approved.slice(0, 4).forEach((review) => {
@@ -350,41 +421,53 @@
         if (review.highlight) { const badge = document.createElement("span"); badge.className = "review-card__highlight"; badge.textContent = "Featured guest note"; card.append(badge); }
         card.append(quote, author); grid.append(card);
       });
-      const average = approved.reduce((sum, item) => sum + Number(item.rating || 0), 0) / approved.length;
-      setText("#ratingNumber", average.toFixed(1));
-      setText("#ratingCaption", `${approved.length} approved guest ${approved.length === 1 ? "review" : "reviews"}`);
+      if (approved.length) {
+        const average = approved.reduce((sum, item) => sum + Number(item.rating || 0), 0) / approved.length;
+        setText("#ratingNumber", average.toFixed(1));
+        setText("#ratingCaption", `${approved.length} approved guest ${approved.length === 1 ? "review" : "reviews"}`);
+        setRatingStars(average, "approved Four Flavours website guest reviews");
+      }
     }
-    if (!approved.length) {
+
+    if (googleReviewPayload) {
+      const rating = Number(googleReviewPayload.rating);
+      const total = Number(googleReviewPayload.userRatingCount);
+      setText("#ratingNumber", Number.isFinite(rating) && rating > 0 ? rating.toFixed(1) : "—");
+      setText("#ratingCaption", Number.isFinite(total) && total > 0 ? `${total.toLocaleString()} Google ratings` : "Google Maps guest reviews");
+      setRatingStars(rating, "Google Maps guest reviews");
+    } else if (!approved.length) {
       setText("#ratingNumber", "—");
-      setText("#ratingCaption", "Be the first to share your experience");
+      setText("#ratingCaption", "View the latest guest ratings on Google Maps");
+      setRatingStars(null, "Google Maps guest reviews");
     }
+
     const promo = document.createElement("article"); promo.className = "review-card review-card--accent reveal is-visible";
     const quoteMark = document.createElement("span"); quoteMark.className = "review-card__quote"; quoteMark.setAttribute("aria-hidden", "true"); quoteMark.textContent = "“";
     const title = document.createElement("h3"); title.append(document.createTextNode("Your next"), document.createElement("br")); const em = document.createElement("em"); em.textContent = "favourite story"; title.append(em, document.createElement("br"), document.createTextNode("could be yours."));
-    const button = document.createElement("button"); button.type = "button"; button.className = "button button--light"; button.dataset.openReview = "true"; button.textContent = "Share your experience ↗";
+    const button = document.createElement("a"); button.className = "button button--light"; button.href = googleReviewUrl(); button.target = "_blank"; button.rel = "noopener noreferrer"; button.textContent = "Share your experience ↗";
     promo.append(quoteMark, title, button);
-    if (safeUrl(settings.google_review_url)) {
-      const external = document.createElement("a"); external.className = "text-link"; external.href = safeUrl(settings.google_review_url); external.target = "_blank"; external.rel = "noopener noreferrer"; external.textContent = "Also review us on Google ↗"; promo.append(external);
-    }
+    const external = document.createElement("a"); external.className = "text-link"; external.href = googleListingUrl(); external.target = "_blank"; external.rel = "noopener noreferrer"; external.textContent = "Read Google reviews ↗"; promo.append(external);
     grid.append(promo);
-    bindReviewButtons();
   }
 
   function renderGoogleReviews(payload) {
     const section = $("#googleReviewsSection");
     const grid = $("#googleReviewGrid");
     if (!section || !grid || !payload || !Array.isArray(payload.reviews)) return;
+    googleReviewPayload = payload;
     const cards = payload.reviews.filter(review => review && (review.text?.text || review.originalText?.text));
-    if (!cards.length) { section.hidden = true; return; }
-
     section.hidden = false;
     setText("#googleReviewsPlaceName", payload.displayName?.text || "Guest reviews on Google");
     const rating = Number(payload.rating);
     setText("#googleReviewsRating", Number.isFinite(rating) && rating > 0 ? rating.toFixed(1) : "Google");
     const total = Number(payload.userRatingCount);
     setText("#googleReviewsCount", Number.isFinite(total) && total >= 0 ? `${total.toLocaleString()} Google rating${total === 1 ? "" : "s"}` : "Reviews on Google");
+    const summaryRating = Number(payload.rating);
+    setText("#ratingNumber", Number.isFinite(summaryRating) && summaryRating > 0 ? summaryRating.toFixed(1) : "—");
+    setText("#ratingCaption", Number.isFinite(total) && total > 0 ? `${total.toLocaleString()} Google ratings` : "Google Maps guest reviews");
+    setRatingStars(summaryRating, "Google Maps guest reviews");
 
-    const mapsHref = safeUrl(payload.googleMapsUri) || safeUrl(settings.google_review_url) || safeUrl(settings.social_links?.googleBusiness);
+    const mapsHref = safeUrl(payload.googleMapsUri) || googleListingUrl() || googleReviewUrl();
     const mapsLink = $("#googleReviewsMapsLink");
     if (mapsLink) {
       mapsLink.hidden = !mapsHref;
@@ -393,8 +476,13 @@
     }
 
     grid.replaceChildren();
-    cards.slice(0, 5).forEach((review) => {
-      const card = document.createElement("article"); card.className = "google-review-card";
+    if (!cards.length) {
+      const empty = document.createElement("p"); empty.className = "google-reviews-empty";
+      empty.textContent = "Google returned the overall rating, but no written review text is available in this response.";
+      grid.append(empty);
+    }
+    cards.slice(0, 5).forEach((review, index) => {
+      const card = document.createElement("article"); card.className = "google-review-card"; card.style.setProperty("--review-index", String(index));
       const top = document.createElement("div"); top.className = "google-review-card__top";
       const source = document.createElement("span"); source.className = "google-review-source"; source.textContent = "GOOGLE MAPS REVIEW";
       const count = Math.max(0, Math.min(5, Math.round(Number(review.rating) || 0)));
@@ -415,7 +503,7 @@
       if (authorHref) { nameNode.href = authorHref; nameNode.target = "_blank"; nameNode.rel = "noopener noreferrer"; }
       const date = document.createElement("small"); date.textContent = String(review.relativePublishTimeDescription || (review.publishTime ? new Date(review.publishTime).toLocaleDateString() : ""));
       byline.append(nameNode); if (date.textContent) byline.append(date); authorRow.append(byline); card.append(top, text, authorRow);
-      const reviewHref = safeUrl(review.googleMapsUri);
+      const reviewHref = safeUrl(review.googleMapsUri) || mapsHref;
       if (reviewHref) {
         const sourceLink = document.createElement("a");
         sourceLink.className = "google-review-card__source-link";
@@ -451,6 +539,7 @@
       });
     }
     googleReviewsLoaded = true;
+    renderReviews();
   }
 
   async function loadGoogleReviews() {
@@ -465,6 +554,23 @@
       console.info("Optional Google reviews are not available yet. Check the Google review setup guide.", error?.message || error);
       const section = $("#googleReviewsSection"); if (section) section.hidden = true;
     }
+  }
+
+  function setupLazyGoogleReviews() {
+    const target = $("#reviews");
+    if (!target || !("IntersectionObserver" in window)) {
+      loadGoogleReviews();
+      return;
+    }
+
+    // Avoid spending an API request for visitors who never scroll to the reviews area.
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        loadGoogleReviews();
+      }
+    }, { rootMargin: "320px 0px" });
+    observer.observe(target);
   }
 
   function currentGalleryFromDom() {
@@ -534,9 +640,9 @@
 
   function bindReviewButtons() {
     $$('[data-open-review]').forEach(button => {
-      button.onclick = () => {
-        setFormStatus("#reviewStatus", "");
-        openDialog("#reviewDialog");
+      button.onclick = (event) => {
+        event.preventDefault();
+        window.open(googleReviewUrl(), "_blank", "noopener,noreferrer");
       };
     });
   }
@@ -598,8 +704,12 @@
     function onScroll() {
       header?.classList.toggle("is-scrolled", window.scrollY > 20);
       $("#mobileActions")?.classList.toggle("is-visible", window.scrollY > 450);
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      document.documentElement.style.setProperty("--scroll-progress", String(Math.min(1, Math.max(0, window.scrollY / maxScroll))));
     }
-    window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    onScroll();
     menuToggle?.addEventListener("click", () => {
       const open = menuToggle.getAttribute("aria-expanded") === "true";
       menuToggle.setAttribute("aria-expanded", String(!open));
@@ -742,6 +852,6 @@
   bindGalleryButtons();
   bindReviewButtons();
   loadContent();
-  loadGoogleReviews();
+  setupLazyGoogleReviews();
   setupRealtime();
 })();

@@ -21,6 +21,7 @@
   <script defer src="js/app.js"></script>
 </head>
 <body>
+  <div class="scroll-progress" aria-hidden="true"></div>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="announcement" id="announcement">
     <span class="announcement__dot" aria-hidden="true"></span>
@@ -141,7 +142,6 @@
         <p>Real voices.<br><em>Real experiences.</em></p>
         <span class="reviews__quote-mark" aria-hidden="true">“</span>
       </div>
-      <div class="review-grid" id="reviewGrid" aria-live="polite"></div>
       <section id="googleReviewsSection" class="google-reviews-section" hidden aria-labelledby="googleReviewsHeading">
         <div class="google-reviews-section__header">
           <div><p class="eyebrow"><span class="eyebrow__line"></span> VERIFIED SOURCE</p><h3 id="googleReviewsHeading">Reviews from Google Maps</h3><p id="googleReviewsPlaceName" class="google-reviews-place-name">Guest feedback from Google</p></div>
@@ -150,7 +150,8 @@
         <div id="googleReviewGrid" class="google-review-grid" aria-live="polite"></div>
         <p id="googleReviewsAttributions" class="google-reviews-attribution">Reviews supplied by Google Maps. Author names link to the original Google profiles where available.</p>
       </section>
-      <p class="fine-print reveal" id="reviewFinePrint">Reviews are published only after moderation so guests see authentic feedback.</p>
+      <div class="review-grid" id="reviewGrid" aria-live="polite"></div>
+      <p class="fine-print reveal" id="reviewFinePrint">Google review cards link back to their Google source. Write a review directly on Google Maps.</p>
     </section>
 
     <section class="gallery section-pad" id="gallery">

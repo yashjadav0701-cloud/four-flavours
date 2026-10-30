@@ -54,7 +54,23 @@
 .theme-actions{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
 .theme-actions .small-note{margin:0;max-width:none}
 #logoWidthValue{display:inline-block;margin-top:3px;color:var(--admin-olive);font-size:10px;font-weight:800}
-input[type=range][name=theme_logo_width]{width:100%;accent-color:var(--admin-clay);cursor:pointer}
+input[type=range][name=theme_logo_width],
+input[type=range][name=theme_marquee_speed]{
+  width:100%;
+  accent-color:var(--admin-clay);
+  cursor:pointer;
+}
+
+.marquee-speed-control{
+  display:grid;
+  gap:8px;
+}
+
+.marquee-speed-control output{
+  font-size:10px;
+  font-weight:800;
+  color:var(--admin-clay);
+}
 @media(max-width:760px){.theme-preview{grid-template-columns:minmax(0,1fr);gap:12px}.theme-preview__swatches{grid-template-columns:repeat(6,27px)}.theme-actions{align-items:flex-start;flex-direction:column}}
 
 .text-button{justify-self:center;border:0;background:transparent;color:var(--admin-clay);font-size:10px;font-weight:800;padding:4px 8px;text-decoration:underline;text-underline-offset:3px}.text-button:hover{color:var(--admin-ink)}.text-button:focus-visible{outline:3px solid rgba(182,79,56,.4);outline-offset:2px;border-radius:4px}
@@ -64,3 +80,7 @@ input[type=range][name=theme_logo_width]{width:100%;accent-color:var(--admin-cla
 .login-brand .admin-brand-image{display:block;width:min(240px,56vw);height:auto;max-width:240px;max-height:54px;object-fit:contain;object-position:left center}
 .sidebar-brand .admin-brand-image{display:block;width:min(168px,100%);height:auto;max-width:168px;max-height:42px;object-fit:contain;object-position:left center}
 @media(max-width:560px){.login-brand{top:20px;left:19px}.login-brand .admin-brand-image{width:min(215px,66vw);max-height:45px}}
+
+
+.shape-settings{display:grid;gap:16px;padding:18px;border:1px solid var(--admin-line);border-radius:8px;background:#fbf8f1}.shape-settings h4{margin:3px 0 5px;font:400 1.65rem/1.1 var(--serif);color:var(--admin-ink)}.shape-settings .small-note{margin:0;max-width:70ch}.shape-settings__fields{margin-top:2px}.shape-settings__fields select{width:100%;min-width:0;padding:10px 12px;border:1px solid #ded7ca;border-radius:5px;background:#fffdf8;color:var(--admin-ink);font:600 11px/1.4 var(--sans)}.shape-preview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding-top:13px;border-top:1px solid var(--admin-line)}.shape-preview{min-width:0;display:grid;gap:7px;text-align:center}.shape-preview>span{font-size:9px;font-weight:800;color:var(--admin-muted);letter-spacing:.05em;text-transform:uppercase}.shape-preview__frame{max-width:120px;margin:auto;aspect-ratio:1.35;width:100%;height:72px;background:linear-gradient(135deg,#e5c7a6 0%,#b64f38 58%,#6b4936 100%);border-radius:8px;clip-path:none;transition:clip-path .28s ease,border-radius .28s ease}.shape-preview__frame[data-shape="classic"]{border-radius:0}.shape-preview__frame[data-shape="soft"]{border-radius:12px}.shape-preview__frame[data-shape="rounded"]{border-radius:28px}.shape-preview__frame[data-shape="pill"]{border-radius:999px}.shape-preview__frame[data-shape="circle"]{border-radius:50%}.shape-preview__frame[data-shape="arch"]{border-radius:48% 48% 8px 8px}.shape-preview__frame[data-shape="oval"]{border-radius:50% / 42%}.shape-preview__frame[data-shape="organic"]{border-radius:62% 38% 55% 45% / 38% 57% 43% 62%}.shape-preview__frame[data-shape="diamond"]{border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}.shape-preview__frame[data-shape="hexagon"]{border-radius:0;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}.shape-preview__frame[data-shape="cut-corners"]{border-radius:0;clip-path:polygon(8% 0,92% 0,100% 12%,100% 88%,92% 100%,8% 100%,0 88%,0 12%)}.shape-preview__frame[data-shape="slant"]{border-radius:0;clip-path:polygon(10% 0,100% 0,90% 100%,0 100%)}.shape-preview__frame[data-shape="leaf"]{border-radius:0 70% 0 70%}.shape-preview__frame[data-shape="ticket"]{border-radius:0;clip-path:polygon(0 0,92% 0,100% 8%,100% 92%,92% 100%,8% 100%,0 92%,0 8%)}.shape-preview__frame[data-shape="circle"],.shape-preview__frame[data-shape="diamond"]{aspect-ratio:1;max-width:90px}
+@media(max-width:560px){.shape-settings{padding:13px}.shape-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.shape-preview__frame{max-width:140px;height:75px}}
